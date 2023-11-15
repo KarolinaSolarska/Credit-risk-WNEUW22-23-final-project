@@ -1,0 +1,382 @@
+---
+title: "Logistic regression model development for Scorecards project"
+author: "Zuzanna Kostecka, Karolina Solarska"
+date: "2023-06-09"
+output: html_document
+---
+```{r}
+requiredPackages = c( "dplyr",
+                      "Matrix",
+                      "stats",
+                      "lmtest",
+                      "sandwich",
+                      "pscl",
+                      "stargazer",
+                      "mfx",
+                      "glmtoolbox",
+                      "DescTools",
+                      "corrplot",
+                      "readr",
+                      "knitr",
+                      "randomForest",
+                      "caret")# list of required packages
+for(i in requiredPackages){if(!require(i,character.only = TRUE)) install.packages(i)}
+for(i in requiredPackages){if(!require(i,character.only = TRUE)) library(i,character.only = TRUE) } 
+```
+
+```{r}
+# Karolina:
+# setwd("C:/Users/karla/OneDrive/Pulpit/Credit Risk/Projekt")
+# app_train4<-read_csv("app_test4.csv")
+# app_test4<-read_csv("app_train4.csv")
+
+# Zuzia:
+setwd("/Users/zuzanna/Desktop/Studia/CreditRisk/projekt")
+load("dane/app_train4.RData")
+load("dane/app_test4.RData")
+
+```
+
+# This is a part of model development. 
+
+```{r}
+# Principal component analysis on training set
+pc <- prcomp(app_train4, center = TRUE, scale = TRUE)
+
+summary(pc)
+
+screeplot(x = pc, type = "line", main = "scree  plot")
+```
+
+
+```{r}
+# Create a new variable for each category using ifelse statements
+app_train4$Single <- ifelse(app_train4$NAME_FAMILY_STATUS == "1", 1, 0)
+app_train4$Civil_marriage <- ifelse(app_train4$NAME_FAMILY_STATUS == "2", 1, 0)
+app_train4$Married <- ifelse(app_train4$NAME_FAMILY_STATUS == "3", 1, 0)
+app_train4$Separated <- ifelse(app_train4$NAME_FAMILY_STATUS == "4", 1, 0)
+app_train4$Widow <- ifelse(app_train4$NAME_FAMILY_STATUS == "5", 1, 0)
+app_train4 <- subset(app_train4, select = -c(NAME_FAMILY_STATUS))
+
+app_train5<- app_train4
+
+app_test4$Single <- ifelse(app_test4$NAME_FAMILY_STATUS == "1", 1, 0)
+app_test4$Civil_marriage <- ifelse(app_test4$NAME_FAMILY_STATUS == "2", 1, 0)
+app_test4$Married <- ifelse(app_test4$NAME_FAMILY_STATUS == "3", 1, 0)
+app_test4$Separated <- ifelse(app_test4$NAME_FAMILY_STATUS == "4", 1, 0)
+app_test4$Widow <- ifelse(app_test4$NAME_FAMILY_STATUS == "5", 1, 0)
+app_test4 <- subset(app_test4, select = -c(NAME_FAMILY_STATUS))
+
+test<- app_test4
+
+
+```
+
+```{r}
+# split into train sample and validation sample
+set.seed(123)  
+
+# Select random indices for the train sample
+train_indices <- sample(nrow(app_train5), 0.8 * nrow(app_train5))  
+
+# Subset the train data using the selected indices
+train <- app_train5[train_indices, ]  
+
+# Subset the validation data using the remaining indices
+validation <- train[-train_indices, ] 
+
+```
+
+
+
+# 1. Model estimation
+
+```{r}
+
+# LOGIT
+model_logit <- glm(TARGET ~ .,
+                   data = train, family = binomial(link = "logit"))
+summary(model_logit)
+
+# PROBIT 
+model_probit <- glm(TARGET ~ .,
+                    data = train, family = binomial(link = "probit"))
+summary(model_probit)
+
+# logit has smaller AIC so we choose logit over probit
+```
+
+## We have to drop SK_ID_CURR variable because is insignificant and this variable is not usefull to predict target variable in our model.
+
+```{r}
+model_logit1 <- glm(TARGET ~ NAME_CONTRACT_TYPE + CODE_GENDER + FLAG_OWN_CAR + FLAG_OWN_REALTY + CNT_CHILDREN + AMT_INCOME_TOTAL + AMT_CREDIT + AMT_ANNUITY + AMT_GOODS_PRICE + NAME_TYPE_SUITE + NAME_EDUCATION_TYPE + DAYS_EMPLOYED + REGION_RATING_CLIENT + DOCUMENT + EXT_SOURCE_1 + EXT_SOURCE_2 + EXT_SOURCE_3 + AMT_REQ_CREDIT_BUREAU_QRT
++ Single + Civil_marriage + Married + Separated + Widow, data = train, family = binomial(link = "logit"))
+summary(model_logit1)
+
+lrtest(model_logit, model_logit1)
+# p-value is higher than significance level so we cannot reject the null hypothesis, so we canconclude that restricted model without SK_ID_CURR is better
+```
+## We have to drop Widow variables because is insignificant, because of the strong correlation.
+
+```{r}
+model_logit2 <- glm(TARGET ~ NAME_CONTRACT_TYPE + CODE_GENDER + FLAG_OWN_CAR + FLAG_OWN_REALTY + CNT_CHILDREN + AMT_INCOME_TOTAL + AMT_CREDIT + AMT_ANNUITY + AMT_GOODS_PRICE + NAME_TYPE_SUITE + NAME_EDUCATION_TYPE + DAYS_EMPLOYED + REGION_RATING_CLIENT + DOCUMENT + EXT_SOURCE_1 + EXT_SOURCE_2 + EXT_SOURCE_3 + AMT_REQ_CREDIT_BUREAU_QRT
++ Single + Civil_marriage + Married + Separated, data = train, family = binomial(link = "logit"))
+summary(model_logit2)
+
+lrtest(model_logit1, model_logit2)
+# p-value is higher than significance level so we cannot reject the null hypothesis, so we canconclude that restricted model without Widow is better
+```
+
+## We will drop also NAME_TYPE_SUITE variable, because is seems to be insignificant.
+
+```{r}
+
+model_logit3 <- glm(TARGET ~ NAME_CONTRACT_TYPE + CODE_GENDER + FLAG_OWN_CAR + FLAG_OWN_REALTY + CNT_CHILDREN + AMT_INCOME_TOTAL + AMT_CREDIT + AMT_ANNUITY + AMT_GOODS_PRICE + NAME_EDUCATION_TYPE + DAYS_EMPLOYED + REGION_RATING_CLIENT + DOCUMENT + EXT_SOURCE_1 + EXT_SOURCE_2 + EXT_SOURCE_3 + AMT_REQ_CREDIT_BUREAU_QRT
++ Single + Civil_marriage + Married + Separated, data = train, family = binomial(link = "logit"))
+summary(model_logit3)
+
+lrtest(model_logit2, model_logit3)
+
+# p-value is higher than significance level so the restricted model without NAME_TYPE_SUITE is better fit.
+
+```
+## We will drop also Married variable, because is seems to be insignificant.
+
+```{r}
+
+model_logit4 <- glm(TARGET ~ NAME_CONTRACT_TYPE + CODE_GENDER + FLAG_OWN_CAR + FLAG_OWN_REALTY + CNT_CHILDREN + AMT_INCOME_TOTAL + AMT_CREDIT + AMT_ANNUITY + AMT_GOODS_PRICE + NAME_EDUCATION_TYPE + DAYS_EMPLOYED + REGION_RATING_CLIENT + DOCUMENT + EXT_SOURCE_1 + EXT_SOURCE_2 + EXT_SOURCE_3 + AMT_REQ_CREDIT_BUREAU_QRT
++ Single + Civil_marriage + Separated, data = train, family = binomial(link = "logit"))
+summary(model_logit4)
+
+lrtest(model_logit3, model_logit4)
+
+# p-value is higher than significance level so the restricted model without NAME_TYPE_SUITE is better fit.
+
+```
+
+
+
+
+```{r}
+logit_final<-model_logit4
+
+stargazer(model_logit, model_probit, model_logit1,logit_final,
+                           type = "text", header = FALSE)
+
+# final model has all variables significant and smallest AIC.
+```
+
+
+```{r}
+# testing jointly significance
+# Fit the null model (intercept only)
+null_logit <- glm(TARGET ~ 1, data = train, family = binomial(link = "logit"))
+
+lrtest(logit_final, null_logit)
+
+# p-value is close to zero so we had to reject null hypothesis about jointly insignificance, so we should choose unrestricted model and we can conclude that variables are jointly significant.
+```
+
+<br>
+The linktest function is sourced Advanced Econometrics course on our faculty. 
+```{r}
+# Now we can perform linktest on our final model
+# source("C:/Users/karla/OneDrive/Pulpit/Credit Risk/Projekt/data/linktest.R")
+
+# Zuzia
+source("/Users/zuzanna/Desktop/Studia/CreditRisk/projekt/linktest.R")
+linktest_result = linktest(logit_final) 
+
+# Model don't have correct form, because both yhat variable is statistically significant and yhat2 is 
+# statistically significant. The correct form would be if the second one will be insignificant, but we can assume that significance level is 10% and then yhat2 is insignificant and then we have correct form.
+```
+
+
+```{r}
+# Goodness-of-Fit Tests
+
+hltest(logit_final, verbose = TRUE)
+
+# P-value is higher than significance level so we cannot reject the null hypothesis that specification of model is correct.
+
+```
+
+
+```{r}
+
+
+# calculating R2 McKelvey-Zavoina
+R2_McKelveyZavoina <- PseudoR2(logit_final, which = "McKelveyZavoina")
+print(paste("R2 McKelvey-Zavoina:", round(R2_McKelveyZavoina * 100, 2), "%"))
+
+# If the latent(unobserved) variable was observed then our model would explain 17.28 % of its variation.
+
+# calculating count R2
+countR2 <- function(logit_final) mean(logit_final$y == round(logit_final$fitted.values))
+R2_count <- countR2(logit_final)
+print(paste("Count R2:", round(R2_count * 100, 2), "%"))
+
+# Our model correctly predicts 92% of all observations, 
+
+```
+
+
+```{r}
+
+logitmfx(formula = TARGET ~ NAME_CONTRACT_TYPE + CODE_GENDER + FLAG_OWN_CAR + FLAG_OWN_REALTY + CNT_CHILDREN + AMT_INCOME_TOTAL + AMT_CREDIT + AMT_ANNUITY + AMT_GOODS_PRICE + NAME_EDUCATION_TYPE + DAYS_EMPLOYED + REGION_RATING_CLIENT + DOCUMENT + EXT_SOURCE_1 + EXT_SOURCE_2 + EXT_SOURCE_3 + AMT_REQ_CREDIT_BUREAU_QRT
++ Single + Civil_marriage + Separated, data = train, atmean=TRUE)
+
+# NAME_CONTRACT_TYPE: having a revolving loan is associated with a lower predicted probability of payment difficulties compared to having a cash loan by 2.36 percentage points.
+
+# CODE_GENDER: Being a female decreases the probability of the client experiencing payment difficulties by 2.43 percentage points compared to being a male holding other variables constant.
+        
+# FLAG_OWN_CAR: If client owns a car, it decreases the probability of the client experiencing payment difficulties by 1.5 percentage points compared to client who dont have, holding other variables constant.
+
+# FLAG_OWN_REALTY: If client owns a house or flat it increases the probability of the client experiencing payment difficulties by 0.19 percentage points compared to client who dont have, holding other variables constant.
+
+# CNT_CHILDREN: Additional number of children the client has, increases the probability of the client experiencing payment difficulties by 0.24 percentage points, holding other variables constant.
+
+# AMT_INCOME_TOTAL: Additional unit of uncome of the client decreases the probability of the client experiencing payment difficulties by 0.000004 percentage points, holding other variables constant.
+
+# AMT_CREDIT: Additional unit of credit amount of the loan, increases the probability of the client experiencing payment difficulties by 0.000002 percentage points, holding other variables constant.
+
+# AMT_ANNUITY: Additional unit of loan annuity, increases the probability of the client experiencing payment difficulties by 0.00006 percentage points, holding other variables constant.
+
+# AMT_GOODS_PRICE: Additional unit of loans that is the price of the goods for which the loan is given for consumer, decreases the probability of the client experiencing payment difficulties by 0.000003 percentage points, holding other variables constant.
+
+# NAME_EDUCATION_TYPE: Higher level of highest education the client achieved decreases the probability of the client experiencing payment difficulties by 1.15 percentage points, holding other variables constant.
+
+# DAYS_EMPLOYED: Additional day before the application the person started current employment,time only relative to the application increases the probability of the client experiencing payment difficulties by 0.000006 percentage points, holding other variables constant.
+
+# REGION_RATING_CLIENT: Additional unit of rating of the region where client lives increases the probability of the client experiencing payment difficulties by 0.85 percentage points, holding other variables constant.
+
+# DOCUMENT: When client provide document, it decreases the probability of the client experiencing payment difficulties by 13.18 percentage points, holding other variables constant.
+
+# AMT_REQ_CREDIT_BUREAU_QRT: Additional number of enquiries to Credit Bureau about the client 3 month before application (excluding one month before application) decreases the probability of the client experiencing payment difficulties by 0.22 percentage points, holding other variables constant.
+
+# Single: Being single increases the probability of the client experiencing payment difficulties by 0.98 percentage points compared to not being single, holding other variables constant.
+
+# Civil_marriage: Having civil marriage increases the probability of the client experiencing payment difficulties by 1.26 percentage points compared to not having, holding other variables constant.
+
+# Separated: Being separated increases the probability of the client experiencing payment difficulties by 1 percentage points compared to not being, holding other variables constant.
+
+```
+
+
+
+```{r}
+deviance_resid <- residuals(logit_final, type = "deviance")
+# Scatter plot of deviance residuals
+plot(deviance_resid, pch = 16, col = ifelse(deviance_resid == 1, "red", "blue"),
+     xlab = "Target Variable (0: Non-risk, 1: Risk)",
+     ylab = "Deviance Residuals", main = "Deviance Residuals vs. Target Variable")
+
+# Histogram of deviance residuals
+hist(deviance_resid, breaks = 30, col = "lightblue", main = "Deviance Residuals Histogram")
+
+```
+
+# 2. Prediction - logistic regression
+
+```{r}
+# Generating predictions
+fitted_values <- predict(logit_final, newdata = validation, type = "response")
+
+# Creating the prediction dataframe with scale levels
+predict_valid <- data.frame('SK_ID_CURR' = validation$SK_ID_CURR, 'TARGET' = fitted_values)
+
+```
+
+
+# 3. Evaluate Metrics
+
+```{r}
+# Convert variables to factors with the same levels
+credit_ratings <- c("AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "BBB", "BBB-", 
+                    "BB+", "BB", "BB-", "B+", "B", "B-", "CCC+", "CCC", "CCC-", 
+                    "D+", "D")
+predict_valid_threshold <- ifelse(predict_valid$TARGET >= 0.2, 1, 0)
+predict_valid_threshold <- factor(predict_valid_threshold, levels = c(0, 1))
+validation$TARGET <- factor(validation$TARGET, levels = c(0, 1))
+
+
+# Create confusion matrix
+confusion_matrix <- confusionMatrix(predict_valid_threshold, validation$TARGET)
+
+
+# Calculate chosen evaluation metrics
+accuracy <- confusion_matrix$overall["Accuracy"]
+precision <- confusion_matrix$byClass["Precision"]
+f1_score <- confusion_matrix$byClass["F1"]
+
+# Print the evaluation metrics
+print(confusion_matrix)
+print(paste("Accuracy:", accuracy))
+print(paste("Precision:", precision))
+print(paste("F1 Score:", f1_score))
+
+
+
+# The accuracy of the model is 0.8872, which means that it correctly predicted the outcome in 88.72% of cases.
+# The sensitivity is 0.9490. This indicates the proportion of actual positive cases (when target variable is equal to 1) that were correctly identified as positive by the model.
+# The specificity is 0.2031, representing the proportion of actual negative cases (when target variable is equal to 0) that were correctly identified as negative by the model.
+# The positive predictive value is 0.9295, indicating the proportion of predicted positive cases that were correctly classified.
+# The negative predictive value is 0.2647, representing the proportion of predicted negative cases that were correctly classified.
+# The prevalence is 0.9171, indicating the proportion of actual positive cases in the dataset.
+# The balanced accuracy is 0.5760, which is the average of sensitivity and specificity. It provides an overall measure of the model's ability to discriminate between positive and negative cases.
+# The Kappa statistic is 0.1701, which measures the agreement between the predictions and the actual values. A value close to 0 indicates no agreement, while a value close to 1 indicates perfect agreement.
+# The p-value for Mcnemar's test is close to zero, so there is a significant difference between the errors made by the model when predicting positive and negative cases.
+
+
+```
+```{r}
+# Generating predictions on the training dataset.
+train_predictions <- predict(logit_final, newdata = train, type = "response")
+
+train_predictions_threshold <- ifelse(train_predictions >= 0.2, 1, 0)
+train_predictions_threshold <- factor(train_predictions_threshold, levels = c(0, 1))
+train$TARGET <- factor(train$TARGET, levels = c(0, 1))
+
+# Calculating evaluation metrics on the training dataset.
+train_evaluation <- confusionMatrix(train_predictions_threshold, train$TARGET)
+
+train_accuracy <- train_evaluation$overall["Accuracy"]
+validation_accuracy <- accuracy
+
+# Compare accuracy
+if (train_accuracy > validation_accuracy) {
+  print("Model may be overfitting.")
+} else if (train_accuracy < validation_accuracy) {
+  print("Model may be underfitting.")
+} else {
+  print("Model performance is consistent.")
+}
+
+
+```
+```{r}
+# Output suggests that the model may be overfitting. This means that the model is performing better on the training set than on the validation set, so it may indicate a potential lack of generalization to unseen data.
+
+# It may be considered implementing regularization techniques, such as L1 or L2 regularization, which introduce a penalty for complex models during the training process. In this case regularization will help to prevent the model from fitting too closely to the training data and encourages better generalization to new data. Some other model selection and evaluation techniques, such as cross-validation and learning curves can be used to obtain a more comprehensive assessment of our model's performance. It may help to identify any potential sources of overfitting.
+```
+
+
+# 4. Prediction on test sample
+
+```{r}
+# Make predictions on the test dataset
+fitted_values_test <- predict(logit_final, newdata = test, type = "response")
+
+# Create the prediction dataframe with scale levels
+predictions <- data.frame('SK_ID_CURR' = test$SK_ID_CURR, 'TARGET' = fitted_values_test)
+
+predictions$credit_ratings <- cut(predictions$TARGET, 
+                                 breaks = c(-Inf, seq(0, 1, length.out = 20)), 
+                                 labels = credit_ratings, right = FALSE)
+
+
+# Write the predictions to a CSV file
+# write.csv(predictions, file = "predictions.csv", row.names = FALSE)
+
+```
+

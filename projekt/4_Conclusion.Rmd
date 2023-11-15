@@ -1,0 +1,113 @@
+---
+title: "4-Comparison-and-conclusion"
+author: "Zuzanna Kostecka, Karolina Solarska"
+date: "2023-07-01"
+output: html_document
+---
+
+<br>
+
+# Comparision
+
+<br>
+
+We are on the final stage of our jouney. Clearly, the random forest required from us
+more computational power and its effect were less precise due to the train sample limitation.
+We limited the observations, because our computers couldn't handle the calculations.
+<br>
+On the other hand, logistic regression occured to be more arbitral.
+<br>
+Please see below for the evaluation metrics.
+<br>
+<br>
+<br>
+
+# Logistic regression
+
+```{r}
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 42891  3172
+##          1  2336   915
+##                                           
+##                Accuracy : 0.8883          
+##                  95% CI : (0.8855, 0.8911)
+##     No Information Rate : 0.9171          
+##     P-Value [Acc > NIR] : 1               
+##                                           
+##                   Kappa : 0.1899          
+##                                           
+##  Mcnemar's Test P-Value : <2e-16          
+##                                           
+##             Sensitivity : 0.9483          
+##             Specificity : 0.2239          
+##          Pos Pred Value : 0.9311          
+##          Neg Pred Value : 0.2815          
+##              Prevalence : 0.9171          
+##          Detection Rate : 0.8698          
+##    Detection Prevalence : 0.9341          
+##       Balanced Accuracy : 0.5861          
+##                                           
+##        'Positive' Class : 0               
+## 
+```
+
+<br>
+<br>
+<br>
+
+# Random Forest
+
+```{r}
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 13048  1110
+##          1    54    40
+##                                           
+##                Accuracy : 0.9183          
+##                  95% CI : (0.9137, 0.9228)
+##     No Information Rate : 0.9193          
+##     P-Value [Acc > NIR] : 0.6734          
+##                                           
+##                   Kappa : 0.0528          
+##                                           
+##  Mcnemar's Test P-Value : <2e-16          
+##                                           
+##             Sensitivity : 0.99588         
+##             Specificity : 0.03478         
+##          Pos Pred Value : 0.92160         
+##          Neg Pred Value : 0.42553         
+##              Prevalence : 0.91931         
+##          Detection Rate : 0.91552         
+##    Detection Prevalence : 0.99340         
+##       Balanced Accuracy : 0.51533         
+##                                           
+##        'Positive' Class : 0               
+## 
+```
+
+<br>
+<br>
+<br>
+
+# Conclusion
+
+<br>
+
+We observed our models were overfitted.  Also, due to the time limitations, we didn't
+paid attention to complex parameters tunning - character of the report is the overview. 
+<br>
+We concluded, that Random Forest requires more computational power and effort paid to the
+development to get the consistent results. Even the accuracy was higher than in case of
+logistic regression, it performed poorly in terms of AUC and ROC calculations (not presented in the report). We also observed the poor handling of the imbalanced dataset. 
+<br>
+Surely, the next stages of the development would require parameters tunning, 
+overfitting handling and, most of all, better formula for scoring assignment. 
+<br>
+<br>
+<br>
+
