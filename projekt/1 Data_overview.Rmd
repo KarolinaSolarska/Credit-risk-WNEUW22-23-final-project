@@ -1,0 +1,977 @@
+---
+title: "Data overview for Scorecards project"
+author: "Zuzanna Kostecka, Karolina Solarska"
+date: "2023-06-09"
+output: html_document
+---
+```{r}
+library(knitr)
+# install.packages("readr")
+library(readr)
+library(corrplot)
+```
+
+```{r}
+# Karolina:
+# setwd("C:/Users/karla/OneDrive/Pulpit/Credit Risk/Projekt")
+# app_train3<-read_csv("app_test3.csv")
+# app_test3<-read_csv("app_train3.csv")
+
+# Zuzia:
+setwd("/Users/zuzanna/Desktop/Studia/CreditRisk/projekt")
+load("dane/app_train_prep.RData")
+load("dane/app_test_prep.RData")
+
+```
+
+# Introduction
+
+This is an overview of our initially prepared data. We extracted the applicant's 
+profiles from [Kaggle](https://www.kaggle.com/competitions/home-credit-default-risk/data).
+
+The summary of Train Data.
+```{r, echo=TRUE}
+summary(app_train3)
+```
+<br>
+<br>
+
+The summary of Test Data.
+```{r, echo=TRUE}
+summary(app_test3)
+```
+<br>
+<br>
+
+# 0. TARGET
+
+```{r, echo=TRUE}
+unique(app_train3$TARGET)
+```
+
+```{r}
+app_train3$TARGET <- as.numeric(app_train3$TARGET)
+summary(app_train3$TARGET)
+targetTR <- table(app_train3$TARGET)
+barplot(targetTR, main = "Target variable is train sample",
+        ylab = "Count",
+        names.arg = c("0", "1"),
+        col = c("grey", "orange"))
+```
+
+# 1. NAME_CONTRACT_TYPE
+
+We can observe the contract type is a text variable. We need to transform it to
+categorical data type. 
+<br>
+```{r, echo=TRUE}
+unique(app_train3$NAME_CONTRACT_TYPE)
+unique(app_test3$NAME_CONTRACT_TYPE)
+```
+<br>
+
+After transformation: 
+
+Cash loans = 0 and Revolving loans = 1
+```{r, echo=FALSE}
+app_train3$NAME_CONTRACT_TYPE <- ifelse(app_train3$NAME_CONTRACT_TYPE == "Cash loans", 0,
+                  ifelse(app_train3$NAME_CONTRACT_TYPE == "Revolving loans", 1,
+                  sample(c(0, 1), length(app_train3$NAME_CONTRACT_TYPE), replace = TRUE)))
+app_test3$NAME_CONTRACT_TYPE <- ifelse(app_test3$NAME_CONTRACT_TYPE == "Cash loans", 0,
+                  ifelse(app_test3$NAME_CONTRACT_TYPE == "Revolving loans", 1,
+                  sample(c(0, 1), length(app_test3$NAME_CONTRACT_TYPE), replace = TRUE)))
+
+# Assign numeric values to the factor levels based on the mapping
+app_train3$NAME_CONTRACT_TYPE <- as.integer(app_train3$NAME_CONTRACT_TYPE)
+app_test3$NAME_CONTRACT_TYPE <- as.integer(app_test3$NAME_CONTRACT_TYPE)
+
+# Now we can verify the changes
+unique(app_test3$NAME_CONTRACT_TYPE)
+
+is.numeric(app_train3$NAME_CONTRACT_TYPE)
+is.numeric(app_test3$NAME_CONTRACT_TYPE)
+
+loanTR <- table(app_train3$NAME_CONTRACT_TYPE)
+loanTR
+barplot(loanTR, main = "Counts of Loan Types in train sample",
+        ylab = "Count",
+        names.arg = c("Cash Loan", "Revolving Loan"),
+        col = c("grey", "orange"))
+
+loanTE <- table(app_test3$NAME_CONTRACT_TYPE)
+loanTE
+barplot(loanTE, main = "Counts of Loan Types in test sample",
+        ylab = "Count",
+        names.arg = c("Cash Loan", "Revolving Loan"),
+        col = c("grey", "orange"))
+
+
+```
+
+<br>
+<br>
+<br>
+
+# 2. CODE_GENDER
+
+We can observe the gender is a text variable. We need to transform it to
+binary data type. 
+<br>
+```{r, echo=TRUE}
+unique(app_train3$CODE_GENDER)
+unique(app_test3$CODE_GENDER)
+```
+<br>
+
+After transformation: 
+
+```{r, echo=FALSE}
+app_train3$CODE_GENDER <- ifelse(app_train3$CODE_GENDER == "M", 0,
+                                       ifelse(app_train3$CODE_GENDER == "F", 1,
+                                              sample(c(0, 1), length(app_train3$CODE_GENDER), replace = TRUE)))
+
+unique(app_train3$CODE_GENDER)
+
+app_test3$CODE_GENDER <- ifelse(app_test3$CODE_GENDER == "M", 0, 1)
+unique(app_test3$CODE_GENDER)
+
+is.numeric(app_train3$CODE_GENDER)
+is.numeric(app_test3$CODE_GENDER)
+
+genderTR <- table(app_train3$CODE_GENDER)
+
+barplot(genderTR, main = "Gender participation in train sample",
+        ylab = "Count",
+        names.arg = c("Male", "Female"),
+        col = c("grey", "orange"))
+
+genderTE <- table(app_test3$CODE_GENDER)
+
+barplot(genderTE, main = "Gender participation in test sample",
+        ylab = "Count",
+        names.arg = c("Male", "Female"),
+        col = c("grey", "orange"))
+```
+
+<br>
+<br>
+<br>
+
+# 3. FLAG_OWN_CAR
+
+We can observe the owning car is a text variable. We need to transform it to
+binary data type. 
+<br>
+```{r, echo=TRUE}
+unique(app_train3$FLAG_OWN_CAR)
+unique(app_test3$FLAG_OWN_CAR)
+```
+<br>
+
+After transformation: 
+
+```{r, echo=FALSE}
+app_train3$FLAG_OWN_CAR <- ifelse(app_train3$FLAG_OWN_CAR == "N", 0, 1)
+unique(app_train3$FLAG_OWN_CAR)
+
+app_test3$FLAG_OWN_CAR <- ifelse(app_test3$FLAG_OWN_CAR == "N", 0, 1)
+unique(app_test3$FLAG_OWN_CAR)
+
+is.numeric(app_train3$FLAG_OWN_CAR)
+is.numeric(app_test3$FLAG_OWN_CAR)
+
+carTR <- table(app_train3$FLAG_OWN_CAR)
+
+barplot(carTR, main = "Car owners in train sample",
+        ylab = "Count",
+        names.arg = c("Do not own a car", "Own a car"),
+        col = c("grey", "orange"))
+
+carTE <- table(app_test3$FLAG_OWN_CAR)
+
+barplot(carTE, main = "Car owners in test sample",
+        ylab = "Count",
+        names.arg = c("Do not own a car", "Own a car"),
+        col = c("grey", "orange"))
+
+```
+
+<br>
+<br>
+<br>
+
+# 4. FLAG_OWN_REALTY
+
+We can observe the owning a flat or house is a text variable. We need to transform it to
+binary data type. 
+<br>
+```{r, echo=TRUE}
+unique(app_train3$FLAG_OWN_REALTY)
+unique(app_test3$FLAG_OWN_REALTY)
+```
+<br>
+
+After transformation: 
+
+```{r, echo=FALSE}
+app_train3$FLAG_OWN_REALTY <- ifelse(app_train3$FLAG_OWN_REALTY == "N", 0, 1)
+unique(app_train3$FLAG_OWN_REALTY)
+
+app_test3$FLAG_OWN_REALTY <- ifelse(app_test3$FLAG_OWN_REALTY == "N", 0, 1)
+unique(app_test3$FLAG_OWN_REALTY)
+
+is.numeric(app_train3$FLAG_OWN_REALTY)
+is.numeric(app_test3$FLAG_OWN_REALTY)
+
+realtyTR <- table(app_train3$FLAG_OWN_REALTY)
+
+barplot(realtyTR, main = "Flat/house owners in train sample",
+        ylab = "Count",
+        names.arg = c("Do not own a flat/house", "Own a flat/house"),
+        col = c("grey", "orange"))
+
+realtyTE <- table(app_test3$FLAG_OWN_CAR)
+
+barplot(realtyTE, main = "Flat/house owners in test sample",
+        ylab = "Count",
+        names.arg = c("Do not own a flat/house", "Own a flat/house"),
+        col = c("grey", "orange"))
+
+```
+
+<br>
+<br>
+<br>
+
+# 5. CNT_CHILDREN
+
+
+<br>
+```{r, echo=TRUE}
+unique(app_train3$CNT_CHILDREN)
+unique(app_test3$CNT_CHILDREN)
+```
+<br>
+
+```{r, echo=FALSE}
+childTR <- table(app_train3$CNT_CHILDREN)
+
+barplot(childTR, main = "Number of children in train sample",
+        ylab = "Count"
+        )
+
+childTE <- table(app_test3$CNT_CHILDREN)
+
+barplot(childTE, main = "Number of children  in test sample",
+        ylab = "Count"
+        )
+```
+
+<br> 
+<br>
+
+In this case, we will treat 4 children and more as multiple families. We need to 
+cap the data.
+
+```{r, echo = FALSE}
+# Replace values above 4 with 4 in CNT_CHILDREN column
+app_train3$CNT_CHILDREN <- ifelse(app_train3$CNT_CHILDREN > 4, 4, app_train3$CNT_CHILDREN)
+app_test3$CNT_CHILDREN <- ifelse(app_test3$CNT_CHILDREN > 4, 4, app_test3$CNT_CHILDREN)
+
+childTR <- table(app_train3$CNT_CHILDREN)
+
+barplot(childTR, main = "Number of children in train sample after capping",
+        ylab = "Count"
+        )
+
+childTE <- table(app_test3$CNT_CHILDREN)
+
+barplot(childTE, main = "Number of children  in test sample after capping",
+        ylab = "Count"
+        )
+```
+
+Transform the variable to binary.
+
+```{r, echo = FALSE}
+# Replace values above 0 with 1 in CNT_CHILDREN column
+app_train3$CNT_CHILDREN <- ifelse(app_train3$CNT_CHILDREN > 0, 1, app_train3$CNT_CHILDREN)
+app_test3$CNT_CHILDREN <- ifelse(app_test3$CNT_CHILDREN > 0, 1, app_test3$CNT_CHILDREN)
+
+childTR <- table(app_train3$CNT_CHILDREN)
+
+barplot(log(childTR), main = "Number of children in train sample after capping to 0-1",
+        ylab = "Count"
+        )
+
+childTE <- table(app_test3$CNT_CHILDREN)
+
+barplot(childTE, main = "Number of children  in test sample after capping to 0-1",
+        ylab = "Count"
+        )
+```
+
+On this stage, our children variable is balanced for train sample and imbalanced
+for test sample.
+
+<br>
+<br>
+<br>
+
+
+# 6. AMT_INCOME_TOTAL
+
+```{r, echo=FALSE}
+summary(app_test3$AMT_INCOME_TOTAL)
+summary(app_train3$AMT_INCOME_TOTAL)
+
+# Plot the distribution of AMT_INCOME_TOTAL
+hist(app_test3$AMT_INCOME_TOTAL, 
+     main = "Distribution of Income in test sample",
+     xlab = "Income Total")
+
+hist(app_train3$AMT_INCOME_TOTAL, 
+     main = "Distribution of income in train sample",
+     xlab = "Income Total")
+```
+<br>
+<br>
+We can observe that the outliers are only form the right side. We use winsorization.
+```{r, echo=FALSE}
+# Winsorize AMT_INCOME_TOTAL from the right side by 5%
+
+# Calculate the 95th percentile
+p95 <- quantile(app_test3$AMT_INCOME_TOTAL, 0.95, na.rm = TRUE)
+
+# Winsorize AMT_INCOME_TOTAL from the right side by 5%
+app_test3$AMT_INCOME_TOTAL[app_test3$AMT_INCOME_TOTAL > p95] <- p95
+app_train3$AMT_INCOME_TOTAL[app_train3$AMT_INCOME_TOTAL > p95] <- p95
+
+
+hist(app_test3$AMT_INCOME_TOTAL, 
+     main = "Distribution of Income in test sample after winsorization",
+     xlab = "Income Total")
+
+hist(app_train3$AMT_INCOME_TOTAL, 
+     main = "Distribution of income in train sample after winsorization",
+     xlab = "Income Total")
+```
+
+# 7. AMT_CREDIT
+
+```{r, echo=FALSE}
+summary(app_test3$AMT_CREDIT)
+summary(app_train3$AMT_CREDIT)
+
+# Plot the distribution of AMT_CREDIT
+hist(app_test3$AMT_CREDIT, 
+     main = "Distribution of Credit Application in test sample",
+     xlab = "Income Total")
+
+hist(app_train3$AMT_CREDIT, 
+     main = "Distribution of Credit Application in train sample",
+     xlab = "Income Total")
+```
+<br>
+<br>
+
+Applying logarithmic transformation.
+
+```{r}
+
+app_train3$AMT_CREDIT <- log(app_train3$AMT_CREDIT)
+app_test3$AMT_CREDIT <- log(app_test3$AMT_CREDIT)
+
+hist(app_test3$AMT_CREDIT, 
+     main = "Distribution of CA in test sample after logarithimic transformation",
+     xlab = "Credit Total")
+
+hist(app_train3$AMT_CREDIT, 
+     main = "Distribution of CA in train sample after logarithimic transformation",
+     xlab = "Credit Total")
+```
+
+# 8. AMT_ANNUITY
+
+```{r, echo=FALSE}
+summary(app_test3$AMT_ANNUITY)
+summary(app_train3$AMT_ANNUITY)
+
+# Plot the distribution of AMT_ANNUITY
+hist(app_test3$AMT_ANNUITY, 
+     main = "Distribution of annuity in test sample",
+     xlab = "Annuity Total")
+
+hist(app_train3$AMT_ANNUITY, 
+     main = "Distribution of annuity in train sample",
+     xlab = "Annuity Total")
+```
+
+<br>
+
+We need to handle NA's (by imputation), and distribution applying logarithmic transformation.
+```{r, echo=FALSE}
+
+# Create a subset of the data without missing values
+no_missing <- app_test3$AMT_ANNUITY[!is.na(app_test3$AMT_ANNUITY)]
+
+# Generate random values from the subset distribution
+random_values <- sample(no_missing, sum(is.na(app_test3$AMT_ANNUITY)), replace = TRUE)
+
+# Replace missing values with random values
+app_test3$AMT_ANNUITY[is.na(app_test3$AMT_ANNUITY)] <- random_values
+
+app_test3$AMT_ANNUITY <- log(app_test3$AMT_ANNUITY)
+
+
+# Create a subset of the data without missing values
+no_missing <- app_train3$AMT_ANNUITY[!is.na(app_train3$AMT_ANNUITY)]
+
+# Generate random values from the subset distribution
+random_values <- sample(no_missing, sum(is.na(app_train3$AMT_ANNUITY)), replace = TRUE)
+
+# Replace missing values with random values
+app_train3$AMT_ANNUITY[is.na(app_train3$AMT_ANNUITY)] <- random_values
+
+app_train3$AMT_ANNUITY <- log(app_train3$AMT_ANNUITY)
+
+
+# Plot the distribution of AMT_ANNUITY
+hist(app_test3$AMT_ANNUITY, 
+     main = "Distribution of annuity in test sample after transformation",
+     xlab = "Annuity Total")
+
+hist(app_train3$AMT_ANNUITY, 
+     main = "Distribution of annuity in train sample after transformation",
+     xlab = "Annuity Total")
+
+```
+<br>
+
+# 9. AMT_GOODS_PRICE
+
+```{r}
+# Summary statistics of AMT_GOODS_PRICE
+summary(app_test3$AMT_GOODS_PRICE)
+summary(app_train3$AMT_GOODS_PRICE)
+
+# Create a subset of the data without missing values
+no_missing_train <- app_train3$AMT_GOODS_PRICE[!is.na(app_train3$AMT_GOODS_PRICE)]
+no_missing_test <- app_test3$AMT_GOODS_PRICE[!is.na(app_test3$AMT_GOODS_PRICE)]
+
+# Generate random values from the train subset distribution
+random_values_train <- sample(no_missing_train, sum(is.na(app_train3$AMT_GOODS_PRICE)), replace = TRUE)
+random_values_test <- sample(no_missing_test, sum(is.na(app_test3$AMT_GOODS_PRICE)), replace = TRUE)
+
+# Replace missing values with random values in the train dataset
+app_train3$AMT_GOODS_PRICE[is.na(app_train3$AMT_GOODS_PRICE)] <- random_values_train
+
+# Replace missing values with random values in the test dataset
+app_test3$AMT_GOODS_PRICE[is.na(app_test3$AMT_GOODS_PRICE)] <- random_values_test
+
+# Plot the distribution of AMT_GOODS_PRICE
+hist(app_test3$AMT_GOODS_PRICE,
+     main = "Distribution of Goods Price in Test Sample",
+     xlab = "Goods Price")
+
+hist(app_train3$AMT_GOODS_PRICE,
+     main = "Distribution of Goods Price in Train Sample",
+     xlab = "Goods Price")
+
+# Boxplots
+boxplot(app_test3$AMT_GOODS_PRICE,
+        main = "Boxplot of Goods Price in Test Sample",
+        ylab = "Goods Price")
+
+boxplot(app_train3$AMT_GOODS_PRICE,
+        main = "Boxplot of Goods Price in Train Sample",
+        ylab = "Goods Price")
+
+```
+<br>
+
+Apply the logarithmic transformation.
+<br>
+
+```{r}
+app_test3$AMT_GOODS_PRICE <- log(app_test3$AMT_GOODS_PRICE)
+app_train3$AMT_GOODS_PRICE <- log(app_train3$AMT_GOODS_PRICE)
+
+# Plot the distribution of AMT_GOODS_PRICE
+hist(app_test3$AMT_GOODS_PRICE,
+     main = "Distribution of Goods Price in Test Sample after transformation",
+     xlab = "Goods Price")
+
+hist(app_train3$AMT_GOODS_PRICE,
+     main = "Distribution of Goods Price in Train Sample after transformation",
+     xlab = "Goods Price")
+```
+<br>
+<br>
+
+# 10. NAME_TYPE_SUITE
+
+```{r}
+# Summary statistics of NAME_TYPE_SUITE
+summary(app_test3$NAME_TYPE_SUITE)
+summary(app_train3$NAME_TYPE_SUITE)
+
+# We can observe the NAME_TYPE_SUITE is a text variable. We need to transform it to categorical data type.
+unique(app_train3$NAME_TYPE_SUITE)
+unique(app_test3$NAME_TYPE_SUITE)
+
+# So we will create a mapping of categories to numeric values
+category_mapping <- c("Unaccompanied" = 1, "Family" = 2, "Spouse, partner" = 3, "Group of people" = 4, "Other_B" = 5, "Children" = 6, "Other_A" = 7)
+
+# Then convert the "NAME_TYPE_SUITE" column to a factor with the specified categories
+app_train3$NAME_TYPE_SUITE <- factor(app_train3$NAME_TYPE_SUITE, levels = names(category_mapping))
+app_test3$NAME_TYPE_SUITE <- factor(app_test3$NAME_TYPE_SUITE, levels = names(category_mapping))
+
+# Assign numeric values to the factor levels based on the mapping
+app_train3$NAME_TYPE_SUITE <- as.integer(app_train3$NAME_TYPE_SUITE)
+app_test3$NAME_TYPE_SUITE <- as.integer(app_test3$NAME_TYPE_SUITE)
+
+# Now we can verify the changes
+unique(app_test3$NAME_TYPE_SUITE)
+
+# and we saw hat we need to handle missing data
+# Create a subset of the data without missing values
+no_missing_train <- app_train3$NAME_TYPE_SUITE[!is.na(app_train3$NAME_TYPE_SUITE)]
+no_missing_test <- app_test3$NAME_TYPE_SUITE[!is.na(app_test3$NAME_TYPE_SUITE)]
+
+# Generate random values from the train subset distribution
+random_values_train <- sample(no_missing_train, sum(is.na(app_train3$NAME_TYPE_SUITE)), replace = TRUE)
+random_values_test <- sample(no_missing_test, sum(is.na(app_test3$NAME_TYPE_SUITE)), replace = TRUE)
+
+# Replace missing values with random values in the train dataset
+app_train3$NAME_TYPE_SUITE[is.na(app_train3$NAME_TYPE_SUITE)] <- random_values_train
+
+# Replace missing values with random values in the test dataset
+app_test3$NAME_TYPE_SUITE[is.na(app_test3$NAME_TYPE_SUITE)] <- random_values_test
+
+# Plot the distribution of AMT_ANNUITY
+hist(app_test3$NAME_TYPE_SUITE, 
+     main = "Distribution of type suite in test sample",
+     xlab = "Type suite")
+
+hist(app_train3$NAME_TYPE_SUITE, 
+     main = "Distribution of type suite in train sample",
+     xlab = "Type suite")
+
+
+```
+
+<br>
+
+After checking the distribution, we decide to parse the NAME_TYPE_SUITE as binary variable.
+
+
+```{r}
+app_test3$NAME_TYPE_SUITE <- ifelse(app_test3$NAME_TYPE_SUITE == '1', 0, 1)
+app_train3$NAME_TYPE_SUITE <- ifelse(app_train3$NAME_TYPE_SUITE == '1', 0, 1)
+
+hist(app_test3$NAME_TYPE_SUITE, 
+     main = "Distribution of type suite in test sample",
+     xlab = "Type suite")
+
+hist(app_train3$NAME_TYPE_SUITE, 
+     main = "Distribution of type suite in train sample",
+     xlab = "Type suite")
+
+```
+
+<br>
+
+# 11. NAME_EDUCATION_TYPE
+
+```{r}
+# Summary statistics of NAME_EDUCATION_TYPE
+summary(app_test3$NAME_EDUCATION_TYPE)
+summary(app_train3$NAME_EDUCATION_TYPE)
+
+# We can observe the NAME_EDUCATION_TYPE is a text variable. We need to transform it to categorical data type.
+unique(app_train3$NAME_EDUCATION_TYPE)
+unique(app_test3$NAME_EDUCATION_TYPE)
+
+# So we will create a mapping of categories to numeric values
+category_mapping <- c("Lower secondary" = 1, "Secondary / secondary special" = 2, "Incomplete higher" = 3, "Higher education" = 4, "Academic degree" = 5)
+
+# Then convert the "NAME_EDUCATION_TYPE" column to a factor with the specified categories
+app_train3$NAME_EDUCATION_TYPE <- factor(app_train3$NAME_EDUCATION_TYPE, levels = names(category_mapping))
+app_test3$NAME_EDUCATION_TYPE <- factor(app_test3$NAME_EDUCATION_TYPE, levels = names(category_mapping))
+
+# Assign numeric values to the factor levels based on the mapping
+app_train3$NAME_EDUCATION_TYPE <- as.integer(app_train3$NAME_EDUCATION_TYPE)
+app_test3$NAME_EDUCATION_TYPE <- as.integer(app_test3$NAME_EDUCATION_TYPE)
+
+# Now we can verify the changes
+unique(app_test3$NAME_EDUCATION_TYPE)
+
+# and we saw hat we need to handle missing data
+# Create a subset of the data without missing values
+no_missing_train <- app_train3$NAME_EDUCATION_TYPE[!is.na(app_train3$NAME_EDUCATION_TYPE)]
+no_missing_test <- app_test3$NAME_EDUCATION_TYPE[!is.na(app_test3$NAME_EDUCATION_TYPE)]
+
+# Generate random values from the train subset distribution
+random_values_train <- sample(no_missing_train, sum(is.na(app_train3$NAME_EDUCATION_TYPE)), replace = TRUE)
+random_values_test <- sample(no_missing_test, sum(is.na(app_test3$NAME_EDUCATION_TYPE)), replace = TRUE)
+
+# Replace missing values with random values in the train dataset
+app_train3$NAME_EDUCATION_TYPE[is.na(app_train3$NAME_EDUCATION_TYPE)] <- random_values_train
+
+# Replace missing values with random values in the test dataset
+app_test3$NAME_EDUCATION_TYPE[is.na(app_test3$NAME_EDUCATION_TYPE)] <- random_values_test
+
+# Plot the distribution of AMT_ANNUITY
+hist(app_test3$NAME_EDUCATION_TYPE, 
+     main = "Distribution of education type in test sample",
+     xlab = "education type")
+
+hist(app_train3$NAME_EDUCATION_TYPE, 
+     main = "Distribution of education type in train sample",
+     xlab = "education type")
+```
+
+After checking the distribution, we decide to parse the NAME_EDUCATION_TYPE as binary variable.
+Higher education and above is 1 and lower is 0.
+
+```{r}
+app_test3$NAME_EDUCATION_TYPE <- ifelse(app_test3$NAME_EDUCATION_TYPE == '1', 0, 
+                (ifelse(app_test3$NAME_EDUCATION_TYPE == '2', 0, 1)))
+app_train3$NAME_EDUCATION_TYPE <- ifelse(app_train3$NAME_EDUCATION_TYPE == '1', 0, 
+                (ifelse(app_train3$NAME_EDUCATION_TYPE == '2', 0, 1)))
+
+hist(app_test3$NAME_EDUCATION_TYPE, 
+     main = "Distribution of education in test sample",
+     xlab = "Educ")
+
+hist(app_train3$NAME_EDUCATION_TYPE, 
+     main = "Distribution of education in train sample",
+     xlab = "Educ")
+
+```
+
+<br>
+<br>
+
+# 12. NAME_FAMILY_STATUS
+
+```{r}
+# Summary statistics of NAME_FAMILY_STATUS
+summary(app_test3$NAME_FAMILY_STATUS)
+summary(app_train3$NAME_FAMILY_STATUS)
+
+# We can observe the NAME_FAMILY_STATUS is a text variable. We need to transform it to categorical data type.
+unique(app_train3$NAME_FAMILY_STATUS)
+unique(app_test3$NAME_FAMILY_STATUS)
+
+# So we will create a mapping of categories to numeric values
+category_mapping <- c("Single / not married" = 1, "Civil marriage" = 2, "Married" = 3, "Separated" = 4, "Widow" = 5)
+
+# Then convert the "NAME_FAMILY_STATUS" column to a factor with the specified categories
+app_train3$NAME_FAMILY_STATUS <- factor(app_train3$NAME_FAMILY_STATUS, levels = names(category_mapping))
+app_test3$NAME_FAMILY_STATUS <- factor(app_test3$NAME_FAMILY_STATUS, levels = names(category_mapping))
+
+# Assign numeric values to the factor levels based on the mapping
+app_train3$NAME_FAMILY_STATUS <- as.integer(app_train3$NAME_FAMILY_STATUS)
+app_test3$NAME_FAMILY_STATUS <- as.integer(app_test3$NAME_FAMILY_STATUS)
+
+# Now we can verify the changes
+unique(app_test3$NAME_FAMILY_STATUS)
+
+# and we saw hat we need to handle missing data
+# Create a subset of the data without missing values
+no_missing_train <- app_train3$NAME_FAMILY_STATUS[!is.na(app_train3$NAME_FAMILY_STATUS)]
+no_missing_test <- app_test3$NAME_FAMILY_STATUS[!is.na(app_test3$NAME_FAMILY_STATUS)]
+
+# Generate random values from the train subset distribution
+random_values_train <- sample(no_missing_train, sum(is.na(app_train3$NAME_FAMILY_STATUS)), replace = TRUE)
+random_values_test <- sample(no_missing_test, sum(is.na(app_test3$NAME_FAMILY_STATUS)), replace = TRUE)
+
+# Replace missing values with random values in the train dataset
+app_train3$NAME_FAMILY_STATUS[is.na(app_train3$NAME_FAMILY_STATUS)] <- random_values_train
+
+# Replace missing values with random values in the test dataset
+app_test3$NAME_FAMILY_STATUS[is.na(app_test3$NAME_FAMILY_STATUS)] <- random_values_test
+
+# Plot the distribution of AMT_ANNUITY
+hist(app_test3$NAME_FAMILY_STATUS, 
+     main = "Distribution of family status in test sample",
+     xlab = "family status")
+
+hist(app_train3$NAME_FAMILY_STATUS, 
+     main = "Distribution of family status in train sample",
+     xlab = "family status")
+
+```
+
+<br>
+<br>
+
+# 13. DAYS_EMPLOYED
+
+```{r}
+# Summary statistics of DAYS_EMPLOYED
+summary(app_test3$DAYS_EMPLOYED)
+summary(app_train3$DAYS_EMPLOYED)
+
+sum(is.na(app_test3$DAYS_EMPLOYED))
+sum(is.na(app_train3$DAYS_EMPLOYED))
+
+# Plot the distribution of DAYS_EMPLOYED
+hist(app_test3$DAYS_EMPLOYED, 
+     main = "Distribution of employed days in test sample",
+     xlab = "employed days")
+
+hist(app_train3$DAYS_EMPLOYED, 
+     main = "Distribution of employed days in train sample",
+     xlab = "employed days")
+```
+
+<br>
+<br>
+
+# 14. REGION_RATING_CLIENT
+
+```{r}
+# Summary statistics of REGION_RATING_CLIENT
+summary(app_test3$REGION_RATING_CLIENT)
+summary(app_train3$REGION_RATING_CLIENT)
+
+sum(is.na(app_test3$REGION_RATING_CLIENT))
+sum(is.na(app_train3$REGION_RATING_CLIENT))
+
+# Plot the distribution of REGION_RATING_CLIENT
+hist(app_test3$REGION_RATING_CLIENT, 
+     main = "Distribution of region rating client in test sample",
+     xlab = "region rating client")
+
+hist(app_train3$REGION_RATING_CLIENT, 
+     main = "Distribution of region rating client in train sample",
+     xlab = "region rating client")
+```
+
+<br>
+<br>
+
+# 15. DOCUMENT
+
+```{r}
+# Summary statistics of DOCUMENT
+summary(app_test3$DOCUMENT)
+summary(app_train3$DOCUMENT)
+
+sum(is.na(app_test3$DOCUMENT))
+sum(is.na(app_train3$DOCUMENT))
+
+app_test3$DOCUMENT <- ifelse(app_test3$DOCUMENT > 0, 1, 0)
+app_train3$DOCUMENT <- ifelse(app_train3$DOCUMENT > 0, 1, 0)
+
+# Plot the distribution of DOCUMENT
+hist(app_test3$DOCUMENT, 
+     main = "Distribution of DOCUMENT in test sample",
+     xlab = "DOCUMENT")
+
+hist(app_train3$DOCUMENT, 
+     main = "Distribution of DOCUMENT in train sample",
+     xlab = "DOCUMENT")
+```
+
+<br>
+<br>
+
+# 16. EXT_SOURCE_1
+
+```{r}
+# Summary statistics of EXT_SOURCE_1
+summary(app_test3$EXT_SOURCE_1)
+summary(app_train3$EXT_SOURCE_1)
+
+sum(is.na(app_test3$EXT_SOURCE_1))
+sum(is.na(app_train3$EXT_SOURCE_1))
+
+# Create a subset of the data without missing values
+no_missing_train <- app_train3$EXT_SOURCE_1[!is.na(app_train3$EXT_SOURCE_1)]
+no_missing_test <- app_test3$EXT_SOURCE_1[!is.na(app_test3$EXT_SOURCE_1)]
+
+# Generate random values from the train subset distribution
+random_values_train <- sample(no_missing_train, sum(is.na(app_train3$EXT_SOURCE_1)), replace = TRUE)
+random_values_test <- sample(no_missing_test, sum(is.na(app_test3$EXT_SOURCE_1)), replace = TRUE)
+
+# Replace missing values with random values in the train dataset
+app_train3$EXT_SOURCE_1[is.na(app_train3$EXT_SOURCE_1)] <- random_values_train
+
+# Replace missing values with random values in the test dataset
+app_test3$EXT_SOURCE_1[is.na(app_test3$EXT_SOURCE_1)] <- random_values_test
+
+# Plot the distribution of EXT_SOURCE_1
+hist(app_test3$EXT_SOURCE_1, 
+     main = "Distribution of EXT_SOURCE_1 in test sample",
+     xlab = "EXT_SOURCE_1")
+
+hist(app_train3$EXT_SOURCE_1, 
+     main = "Distribution of EXT_SOURCE_1 in train sample",
+     xlab = "EXT_SOURCE_1")
+```
+
+<br>
+<br>
+
+# 17. EXT_SOURCE_2
+
+```{r}
+# Summary statistics of EXT_SOURCE_2
+summary(app_test3$EXT_SOURCE_2)
+summary(app_train3$EXT_SOURCE_2)
+
+sum(is.na(app_test3$EXT_SOURCE_2))
+sum(is.na(app_train3$EXT_SOURCE_2))
+
+# Create a subset of the data without missing values
+no_missing_train <- app_train3$EXT_SOURCE_2[!is.na(app_train3$EXT_SOURCE_2)]
+no_missing_test <- app_test3$EXT_SOURCE_2[!is.na(app_test3$EXT_SOURCE_2)]
+
+# Generate random values from the train subset distribution
+random_values_train <- sample(no_missing_train, sum(is.na(app_train3$EXT_SOURCE_2)), replace = TRUE)
+random_values_test <- sample(no_missing_test, sum(is.na(app_test3$EXT_SOURCE_2)), replace = TRUE)
+
+# Replace missing values with random values in the train dataset
+app_train3$EXT_SOURCE_2[is.na(app_train3$EXT_SOURCE_2)] <- random_values_train
+
+# Replace missing values with random values in the test dataset
+app_test3$EXT_SOURCE_2[is.na(app_test3$EXT_SOURCE_2)] <- random_values_test
+
+# Plot the distribution of EXT_SOURCE_2
+hist(app_test3$EXT_SOURCE_2, 
+     main = "Distribution of EXT_SOURCE_2 in test sample",
+     xlab = "EXT_SOURCE_2")
+
+hist(app_train3$EXT_SOURCE_2, 
+     main = "Distribution of EXT_SOURCE_2 in train sample",
+     xlab = "EXT_SOURCE_2")
+```
+
+<br>
+<br>
+
+# 18. EXT_SOURCE_3
+
+```{r}
+# Summary statistics of EXT_SOURCE_3
+summary(app_test3$EXT_SOURCE_3)
+summary(app_train3$EXT_SOURCE_3)
+
+sum(is.na(app_test3$EXT_SOURCE_3))
+sum(is.na(app_train3$EXT_SOURCE_3))
+
+# Create a subset of the data without missing values
+no_missing_train <- app_train3$EXT_SOURCE_3[!is.na(app_train3$EXT_SOURCE_3)]
+no_missing_test <- app_test3$EXT_SOURCE_3[!is.na(app_test3$EXT_SOURCE_3)]
+
+# Generate random values from the train subset distribution
+random_values_train <- sample(no_missing_train, sum(is.na(app_train3$EXT_SOURCE_3)), replace = TRUE)
+random_values_test <- sample(no_missing_test, sum(is.na(app_test3$EXT_SOURCE_3)), replace = TRUE)
+
+# Replace missing values with random values in the train dataset
+app_train3$EXT_SOURCE_3[is.na(app_train3$EXT_SOURCE_3)] <- random_values_train
+
+# Replace missing values with random values in the test dataset
+app_test3$EXT_SOURCE_3[is.na(app_test3$EXT_SOURCE_3)] <- random_values_test
+
+# Plot the distribution of EXT_SOURCE_3
+hist(app_test3$EXT_SOURCE_3, 
+     main = "Distribution of EXT_SOURCE_3 in test sample",
+     xlab = "EXT_SOURCE_3")
+
+hist(app_train3$EXT_SOURCE_3, 
+     main = "Distribution of EXT_SOURCE_3 in train sample",
+     xlab = "EXT_SOURCE_3")
+```
+
+<br>
+<br>
+
+# 19. AMT_REQ_CREDIT_BUREAU_QRT
+
+```{r}
+# Summary statistics of AMT_REQ_CREDIT_BUREAU_QRT
+summary(app_test3$AMT_REQ_CREDIT_BUREAU_QRT)
+summary(app_train3$AMT_REQ_CREDIT_BUREAU_QRT)
+
+sum(is.na(app_test3$AMT_REQ_CREDIT_BUREAU_QRT))
+sum(is.na(app_train3$AMT_REQ_CREDIT_BUREAU_QRT))
+
+# Create a subset of the data without missing values
+no_missing_train <- app_train3$AMT_REQ_CREDIT_BUREAU_QRT[!is.na(app_train3$AMT_REQ_CREDIT_BUREAU_QRT)]
+no_missing_test <- app_test3$AMT_REQ_CREDIT_BUREAU_QRT[!is.na(app_test3$AMT_REQ_CREDIT_BUREAU_QRT)]
+
+# Generate random values from the train subset distribution
+random_values_train <- sample(no_missing_train, sum(is.na(app_train3$AMT_REQ_CREDIT_BUREAU_QRT)), replace = TRUE)
+random_values_test <- sample(no_missing_test, sum(is.na(app_test3$AMT_REQ_CREDIT_BUREAU_QRT)), replace = TRUE)
+
+# Replace missing values with random values in the train dataset
+app_train3$AMT_REQ_CREDIT_BUREAU_QRT[is.na(app_train3$AMT_REQ_CREDIT_BUREAU_QRT)] <- random_values_train
+
+# Replace missing values with random values in the test dataset
+app_test3$AMT_REQ_CREDIT_BUREAU_QRT[is.na(app_test3$AMT_REQ_CREDIT_BUREAU_QRT)] <- random_values_test
+
+# Plot the distribution of AMT_REQ_CREDIT_BUREAU_QRT
+hist(app_test3$AMT_REQ_CREDIT_BUREAU_QRT, 
+     main = "Distribution of AMT_REQ_CREDIT_BUREAU_QRT in test sample",
+     xlab = "AMT_REQ_CREDIT_BUREAU_QRT")
+
+hist(app_train3$AMT_REQ_CREDIT_BUREAU_QRT, 
+     main = "Distribution of AMT_REQ_CREDIT_BUREAU_QRT in train sample",
+     xlab = "AMT_REQ_CREDIT_BUREAU_QRT")
+```
+<br>
+<br>
+
+Change to binary variable, where if there were a request it is 1, if not - 0.
+
+```{r}
+app_test3$AMT_REQ_CREDIT_BUREAU_QRT <- ifelse(app_test3$AMT_REQ_CREDIT_BUREAU_QRT > 0, 1, 0)
+app_train3$AMT_REQ_CREDIT_BUREAU_QRT <- ifelse(app_train3$AMT_REQ_CREDIT_BUREAU_QRT > 0, 1, 0)
+
+hist(app_test3$AMT_REQ_CREDIT_BUREAU_QRT, 
+     main = "Distribution of AMT_REQ_CREDIT_BUREAU_QRT in test sample",
+     xlab = "AMT_REQ_CREDIT_BUREAU_QRT")
+
+hist(app_train3$AMT_REQ_CREDIT_BUREAU_QRT, 
+     main = "Distribution of AMT_REQ_CREDIT_BUREAU_QRT in train sample",
+     xlab = "AMT_REQ_CREDIT_BUREAU_QRT")
+```
+
+```{r}
+str(app_train3)
+
+# Load the corrplot package
+library(corrplot)
+
+# Calculate correlation matrix
+cor_matrix <- cor(app_train3)
+
+# Create heatmap
+heatmap(cor_matrix, 
+        cmap = colorRampPalette(c("blue", "white", "red")), 
+        main = "Correlation Matrix")
+```
+
+
+```{r}
+app_train4<-app_train3
+app_test4<-app_test3
+
+#Karolina 
+# file_path <- "C:\\Users\\karla\\OneDrive\\Pulpit\\Credit Risk\\Projekt\\app_train4.csv"
+
+# Save the dataframe as a CSV file
+# write_csv(app_train4, file_path)
+# file_path <- "C:\\Users\\karla\\OneDrive\\Pulpit\\Credit Risk\\Projekt\\app_test4.csv"
+# write_csv(app_test4, file_path)
+
+save(app_train4, file = "dane/app_train4.RData")
+save(app_test4, file = "dane/app_test4.RData")
+
+```
+
